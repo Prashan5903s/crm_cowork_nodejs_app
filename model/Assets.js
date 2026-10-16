@@ -2,53 +2,84 @@ const mongoose = require('mongoose')
 
 const assetSchema = new mongoose.Schema(
   {
-    vendor_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: true,
-      ref: 'vendor'
-    },
-    location_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: true,
-      ref: 'asset_location'
+    name: {
+      type: String,
+      required: [true, 'Asset name is required'],
+      trim: true
     },
     asset_category_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'asset_category',
-      required: true
+      required: [true, 'Category is required'],
+      index: true
     },
-    name: {
+    description: {
       type: String,
-      required: true,
       trim: true
     },
-    brand: String,
-    model: String,
     serial_number: {
       type: String,
+      trim: true,
       unique: true,
       sparse: true
     },
-    purchase_date: Date,
-    purchase_cost: Number,
-    warranty_start: Date,
-    warranty_end: Date,
     status: {
       type: String,
-      enum: ['1', '2', '3', '4'],
-      default: '1'
+      required: true,
+      default: true
     },
+    brand: String,
+    model: String,
     condition: {
       type: String,
       enum: ['1', '2', '3', '4'],
       default: '1'
     },
+    purchase_cost: {
+      type: Number,
+      min: 0,
+      default: 0
+    },
+    purchase_date: {
+      type: String,
+      required: false,
+      default: null
+    },
     depreciationValue: Number,
-    description: String,
+    location: {
+      type: String,
+      trim: true
+    },
+    location_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'asset_location'
+    },
+    vendor_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'vendor'
+    },
+    warranty_start: Date,
+    warranty_end: {
+      type: Date,
+      validate: {
+        validator: function (v) {
+          return !v || !this.warranty_start || v >= this.warranty_start
+        },
+        message: 'Warranty end must be after warranty start'
+      }
+    },
     assigned_to: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'users'
     },
+    attachments: [
+      {
+        file_name: String,
+        file_url: String,
+        mimetype: String,
+        size: Number
+      }
+    ],
     created_by: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'users',
@@ -57,7 +88,6 @@ const assetSchema = new mongoose.Schema(
     updated_by: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'users',
-      required: false,
       default: null
     }
   },

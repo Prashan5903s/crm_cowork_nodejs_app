@@ -1,5 +1,5 @@
-const PropertyType = require('../../model/PropertyType');
-const { errorResponse, successResponse } = require('../../util/response');
+const PropertyType = require('../../../model/PropertyType');
+const { errorResponse, successResponse } = require('../../../util/response');
 
 exports.getPropertyType = async (req, res, next) => {
     try {

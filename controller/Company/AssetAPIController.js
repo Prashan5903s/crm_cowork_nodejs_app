@@ -1,51 +1,137 @@
+const path = require('path');
+const fs = require('fs/promises');
+
 const Asset = require('../../model/Assets')
-const Vendor = require('../../model/Vendor')
-const User = require('../../model/User')
-const AssetLocation = require('../../model/AssetLocation')
-const AssetCategory = require('../../model/AssetCategory')
+const AssetCategory = require("../../model/AssetCategory")
 const { successResponse, errorResponse } = require('../../util/response')
 
 exports.getAssetAPIController = async (req, res, next) => {
   try {
-    const userId = req?.userId
+    const userId = req.userId;
 
-    const assets = await Asset.find({
-      created_by: userId
-    })
-      .populate('location_id', '_id name')
-      .populate('asset_category_id', '_id name')
-
-    if (!assets) {
-      return errorResponse(res, 'Asset not found', {}, 404)
+    if (!userId) {
+      return errorResponse(res, 'Unauthorized', {}, 401);
     }
 
-    const assetLocation = await AssetLocation.find({
-      created_by: userId
+    const assetRecords = await Asset.find({
+      created_by: userId,
     })
+      .populate({
+        path: 'asset_category_id',
+        select: '_id name',
+      })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const assets = assetRecords.map((asset) => {
+      const category = asset.asset_category_id;
+
+      const rawStatus = String(
+        asset.status || 'ACTIVE'
+      ).toUpperCase();
+
+      const allowedStatuses = [
+        'ACTIVE',
+        'INACTIVE',
+        'MAINTENANCE',
+        'DISPOSED',
+      ];
+
+      const status = allowedStatuses.includes(rawStatus)
+        ? rawStatus
+        : 'ACTIVE';
+
+      const purchaseDate = asset.purchase_date
+        ? new Date(asset.purchase_date)
+        : null;
+
+      return {
+        _id: String(asset._id),
+        id: String(asset._id),
+
+        name: asset.name || '',
+
+        assetCode: String(
+          asset.asset_code ||
+          asset.assetCode ||
+          asset._id
+        ),
+
+        category: category?.name || '',
+
+        asset_category_id: category?._id
+          ? String(category._id)
+          : null,
+
+        status,
+
+        purchaseValue: Number(asset.purchase_cost) || 0,
+
+        purchaseDate:
+          purchaseDate &&
+            !Number.isNaN(purchaseDate.getTime())
+            ? purchaseDate.toISOString()
+            : null,
+
+        serialNumber: asset.serial_number || '',
+        description: asset.description || '',
+        brand: asset.brand || '',
+        model: asset.model || '',
+        condition: asset.condition || '1',
+
+        attachments: Array.isArray(asset.attachments)
+          ? asset.attachments
+          : [],
+
+        createdAt: asset.createdAt || null,
+        updatedAt: asset.updatedAt || null,
+      };
+    });
+
+    return successResponse(
+      res,
+      'Assets fetched successfully',
+      { assets }
+    );
+  } catch (error) {
+    return next(error);
+  }
+};
+
+
+exports.getAssetCreateData = async (req, res, next) => {
+  try {
+
+    const userId = req?.userId;
 
     const assetCategory = await AssetCategory.find({
       created_by: userId
     })
 
-    const vendor = await Vendor.find({
-      created_by: userId
-    })
-
-    const users = await User.find({
-      created_by: userId
-    }).sort({
-      first_name: 1
-    })
-
     const finalData = {
-      assets,
-      category: assetCategory,
-      location: assetLocation,
-      vendor,
-      users
+      assetCategory
     }
 
-    return successResponse(res, 'Asset fetched successfully', finalData)
+    return successResponse(res, "Asset category fetched successfully", finalData)
+
+  } catch (error) {
+    next(error)
+  }
+}
+
+exports.getAssetEditData = async (req, res, next) => {
+  try {
+
+    const userId = req?.userId;
+    const { id } = req?.params;
+
+    const asset = await Asset.findOne({
+      created_by: userId,
+      _id: id
+    })
+
+    return successResponse(res, "Asset category fetched successfully", asset)
+
   } catch (error) {
     next(error)
   }
@@ -53,101 +139,232 @@ exports.getAssetAPIController = async (req, res, next) => {
 
 exports.postAssetAPIController = async (req, res, next) => {
   try {
-    const userId = req?.userId
+    const userId = req.userId;
 
     const {
-      asset_category_id,
-      assigned_to,
-      brand,
-      condition,
-      depreciationValue,
-      description,
-      location_id,
-      model,
       name,
-      purchase_cost,
-      serial_number,
+      category,
+      description,
+      serialNumber,
       status,
-      vendor_id,
-      warranty_end,
-      warranty_start
-    } = req?.body
+      purchaseValue,
+      purchaseDate,
+      location,
+      employeeId,
+    } = req.body;
 
-    await Asset.create({
-      name,
-      asset_category_id,
-      assigned_to,
-      vendor_id,
-      warranty_start,
-      warranty_end,
-      status,
-      model,
-      serial_number,
-      brand,
-      condition,
-      depreciationValue,
-      description,
-      location_id,
+    if (!name?.trim() || !category) {
+
+      return errorResponse(res, "Asset name and category are required", {}, 400)
+    }
+
+    const clean = (value) =>
+      value === '' || value === null || value === undefined
+        ? undefined
+        : value;
+
+    const validStatuses = ['ACTIVE', 'INACTIVE'];
+    const normalizedStatus = String(status || 'ACTIVE').toUpperCase();
+
+    if (!validStatuses.includes(normalizedStatus)) {
+
+      return errorResponse(res, "Invalid asset status", {}, 400)
+    }
+
+    const purchaseCost =
+      purchaseValue === '' ||
+        purchaseValue === null ||
+        purchaseValue === undefined
+        ? 0
+        : Number(purchaseValue);
+
+    if (!Number.isFinite(purchaseCost) || purchaseCost < 0) {
+
+      return errorResponse(res, "Purchase value must be a valid non-negative number", {}, 400)
+    }
+
+    const attachments = (req.files || []).map((file) => ({
+      file_name: file.originalname,
+      file_url: `/uploads/assets/${file.filename}`,
+      mimetype: file.mimetype,
+      size: file.size,
+    }));
+
+    const assetData = {
+      name: name.trim(),
+      asset_category_id: category,
+      description: clean(description),
+      serial_number: clean(serialNumber),
+      status: normalizedStatus,
+      purchase_cost: purchaseCost,
+      purchase_date: purchaseDate
+        ? new Date(purchaseDate.replace(/\s+/g, '')).toISOString().split('T')[0]
+        : undefined,
+      location: clean(location),
+      assigned_to: clean(employeeId),
+      attachments,
       created_by: userId,
-      createdAt: Date.now()
-    })
+    };
 
-    return successResponse(res, 'Asset saved successfully')
+    try {
+      const asset = await Asset.create(assetData);
+
+      return successResponse(res, 'Asset saved successfully', asset);
+    } catch (error) {
+      // Remove newly uploaded files if saving the asset fails.
+      await Promise.all(
+        (req.files || []).map((file) =>
+          fs.unlink(file.path).catch(() => { })
+        )
+      );
+
+      throw error;
+    }
   } catch (error) {
-    next(error)
+    if (error.code === 11000) {
+
+      return errorResponse(res, "This serial number already exists", {}, 409)
+    }
+
+    next(error);
   }
-}
+};
 
 exports.putAssetAPIController = async (req, res, next) => {
   try {
-    const userId = req?.userId
+    const userId = req.userId;
+    const { id } = req.params;
 
     const {
-      asset_category_id,
-      assigned_to,
-      brand,
-      condition,
-      depreciationValue,
-      description,
-      location_id,
-      model,
       name,
-      purchase_cost,
-      serial_number,
+      category,
+      description,
+      serialNumber,
       status,
-      vendor_id,
-      warranty_end,
-      warranty_start
-    } = req?.body
+      purchaseValue,
+      purchaseDate,
+      location,
+      employeeId,
+    } = req.body;
 
-    const { id } = req?.params
 
-    await Asset.findOneAndUpdate(
+
+    if (!userId) {
+      return errorResponse(res, 'Unauthorized', {}, 401);
+    }
+
+    if (!id) {
+      return errorResponse(res, 'Asset ID is required', {}, 400);
+    }
+
+    if (!name?.trim() || !category) {
+      return errorResponse(
+        res,
+        'Asset name and category are required',
+        {},
+        400
+      );
+    }
+
+    const clean = (value) =>
+      value === '' || value === null || value === undefined
+        ? undefined
+        : value;
+
+    const finalStatus = status === 'FALSE' ? "INACTIVE" : "ACTIVE"
+
+    const validStatuses = ['ACTIVE', 'INACTIVE'];
+    const normalizedStatus = String(finalStatus || 'ACTIVE').toUpperCase();
+
+    if (!validStatuses.includes(normalizedStatus)) {
+      return errorResponse(res, 'Invalid asset status', {}, 400);
+    }
+
+    const purchaseCost =
+      purchaseValue === '' ||
+        purchaseValue === null ||
+        purchaseValue === undefined
+        ? 0
+        : Number(purchaseValue);
+
+    if (!Number.isFinite(purchaseCost) || purchaseCost < 0) {
+      return errorResponse(
+        res,
+        'Purchase value must be a valid non-negative number',
+        {},
+        400
+      );
+    }
+
+    // Verify that the category belongs to the current user.
+    const validCategory = await AssetCategory.findOne({
+      _id: category,
+      created_by: userId,
+    }).lean();
+
+    if (!validCategory) {
+      return errorResponse(res, 'Invalid asset category', {}, 400);
+    }
+
+    const assetData = {
+      name: name.trim(),
+      asset_category_id: category,
+      description: clean(description),
+      serial_number: clean(serialNumber),
+      status: normalizedStatus,
+      purchase_cost: purchaseCost,
+      purchase_date: purchaseDate
+        ? new Date(purchaseDate.replace(/\s+/g, ''))
+          .toISOString()
+          .split('T')[0]
+        : undefined,
+      location: clean(location),
+      assigned_to: clean(employeeId),
+      updated_by: userId,
+    };
+
+    const asset = await Asset.findOneAndUpdate(
       {
         _id: id,
-        created_by: userId
+        created_by: userId,
       },
       {
-        name,
-        asset_category_id,
-        assigned_to,
-        vendor_id,
-        warranty_start,
-        warranty_end,
-        status,
-        model,
-        serial_number,
-        brand,
-        condition,
-        depreciationValue,
-        description,
-        location_id,
-        updated_by: userId
+        $set: assetData,
+      },
+      {
+        new: true,
+        runValidators: true,
       }
-    )
+    );
 
-    return successResponse(res, 'Asset saved successfully')
+    if (!asset) {
+      return errorResponse(res, 'Asset not found', {}, 404);
+    }
+
+    return successResponse(
+      res,
+      'Asset updated successfully',
+      asset
+    );
   } catch (error) {
-    next(error)
+    if (error.code === 11000) {
+      return errorResponse(
+        res,
+        'This serial number already exists',
+        {},
+        409
+      );
+    }
+
+    if (error.name === 'ValidationError') {
+      return errorResponse(res, error.message, {}, 400);
+    }
+
+    if (error.name === 'CastError') {
+      return errorResponse(res, 'Invalid asset ID or field value', {}, 400);
+    }
+
+    next(error);
   }
-}
+};
+

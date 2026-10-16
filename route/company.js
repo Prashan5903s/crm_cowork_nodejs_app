@@ -15,7 +15,12 @@ const dashboardController = require('../controller/Company/DashboardController')
 const noticeController = require('../controller/Company/NoticeController')
 const eventController = require('../controller/Company/EventController')
 const maintenanceController = require('../controller/Company/MaintenanceController')
-const propertyTypeController = require('../controller/Company/PropertyTypeController')
+const propertyAPIController = require("../controller/Company/PropertyAPIController")
+const amenityTypeAPIController = require("../controller/Company/Setting/AmenityTypeAPIController")
+const propertyTypeController = require('../controller/Company/Setting/PropertyTypeAPIController')
+const assetCategoryController = require("../controller/Company/Setting/AssetCategoryAPIController")
+const propertyCategoryController = require('../controller/Company/Setting/PropertyCategoryAPIController')
+const propertyGroupController = require('../controller/Company/Setting/PropertyGroupAPIController')
 const ticketTypeController = require('../controller/Company/TicketTypeController')
 const visitorTypeController = require('../controller/Company/VisitorTypeController')
 const reportController = require('../controller/Company/ReportController')
@@ -27,12 +32,18 @@ const locationCategoryController = require('../controller/Company/LocationCatego
 const assetController = require('../controller/Company/AssetAPIController')
 const amcAPIController = require('../controller/Company/AMCAPIController')
 const inspectionController = require('../controller/Company/InspectionAPIController')
+const contactCategoryAPIController = require("../controller/Company/Setting/ContactCategoryAPIController")
 const inspectionScheduleController = require('../controller/Company/InspectionScheduleAPIController')
+const amenityController = require('../controller/Company/AmenityAPIController')
 const documentController = require('../controller/Company/DocumentAPIController')
+const contactAPIController = require("../controller/Company/ContactAPIController")
 
 const createUpload = require('../util/upload')
 const createDocUpload = require('../util/uploadDocFile')
-const amenityController = require('../controller/Company/AmenityAPIController')
+const { uploadField } = require("../util/propertyMulter")
+const createAmenityUpload = require("../util/uploadAmenity")
+
+const { uploadAsset } = require("../util/uploadAsset")
 
 const activityUpload = createUpload(
   [
@@ -55,6 +66,33 @@ const activityUpload = createUpload(
   'bills', // Folder inside /public
   500 // Max size in MB
 )
+
+const IMAGE_TYPES = [
+  'image/jpeg', 'image/png', 'image/gif',
+  'image/webp', 'image/bmp', 'image/tiff'
+];
+const IMAGE_EXTS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tif', '.tiff'];
+
+const contactUpload = createUpload(
+  [...IMAGE_TYPES], // default for any other field
+  'contacts',
+  20, // MB per file
+  {
+    photo: {
+      mimeTypes: IMAGE_TYPES,
+      extensions: IMAGE_EXTS,
+    },
+    kycFiles: {
+      mimeTypes: [
+        ...IMAGE_TYPES,
+        'application/pdf',
+        'application/msword', // .doc
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+      ],
+      extensions: [...IMAGE_EXTS, '.pdf', '.doc', '.docx'],
+    },
+  }
+);
 
 const documentUpload = createDocUpload(
   [
@@ -202,56 +240,48 @@ router.get('/dashboard', isAuth, dashboardController.getDashboardDataAPI)
 //This route is for notice
 router.get('/notice', isAuth, noticeController.getNoticeAPIController)
 router.get('/notice/create', isAuth, noticeController.createNoticeAPI)
-router.post(
-  '/notice',
-  isAuth,
-  imageNoticeUpload('photo'),
-  noticeController.postNoticeController
-)
-router.put(
-  '/notice/update/:id',
-  isAuth,
-  imageNoticeUpload('photo'),
-  noticeController.updateNoticeAPIController
-)
+router.post('/notice', isAuth, imageNoticeUpload('photo'), noticeController.postNoticeController)
+router.put('/notice/update/:id', isAuth, imageNoticeUpload('photo'), noticeController.updateNoticeAPIController)
 
 //This route is for event
 router.get('/event', isAuth, eventController.getEventAPIController)
 router.get('/event/create', isAuth, eventController.createEventController)
-router.post(
-  '/event',
-  isAuth,
-  imageEventUpload('photo'),
-  eventController.postEventControllerAPI
-)
-router.put(
-  '/event/update/:id',
-  isAuth,
-  imageEventUpload('photo'),
-  eventController.updateEventControllerAPI
-)
+router.post('/event', isAuth, imageEventUpload('photo'), eventController.postEventControllerAPI)
+router.put('/event/update/:id', isAuth, imageEventUpload('photo'), eventController.updateEventControllerAPI)
 
 //This route is for maintenance
-router.get(
-  '/maintenance-setting',
-  isAuth,
-  maintenanceController.getMaintenanceAPIController
-)
-router.get(
-  '/maintenance-setting/data/create',
-  isAuth,
-  maintenanceController.createApartmentTypeController
-)
-router.post(
-  '/maintenance-setting/:type',
-  isAuth,
-  maintenanceController.postMaintenanceAPIController
-)
+router.get('/maintenance-setting', isAuth, maintenanceController.getMaintenanceAPIController)
+router.get('/maintenance-setting/data/create', isAuth, maintenanceController.createApartmentTypeController)
+router.post('/maintenance-setting/:type', isAuth, maintenanceController.postMaintenanceAPIController)
 
 //This route is for property type
 router.get('/property-type', isAuth, propertyTypeController.getPropertyType)
 router.post('/property-type', isAuth, propertyTypeController.postType)
 router.put('/property-type/:id', isAuth, propertyTypeController.updateType)
+
+//This route is for asset category
+router.get('/asset-category', isAuth, assetCategoryController.getAssetCategory)
+router.post('/asset-category', isAuth, assetCategoryController.postType)
+router.put('/asset-category/:id', isAuth, assetCategoryController.updateType)
+
+
+//This route is for amenity type
+router.get('/amenity-type', isAuth, amenityTypeAPIController.getAmenityType)
+router.post('/amenity-type', isAuth, amenityTypeAPIController.postType)
+router.put('/amenity-type/:id', isAuth, amenityTypeAPIController.updateType)
+
+//This route is for contact category
+router.get('/contact-category', isAuth, contactCategoryAPIController?.getContactCategoryAPIController)
+router.post('/contact-category', isAuth, contactCategoryAPIController?.postContactCategoryAPIController)
+router.put('/contact-category/:id', isAuth, contactCategoryAPIController?.putContactCategoryAPIController)
+
+router.get('/property-category', isAuth, propertyCategoryController.getPropertyCategory)
+router.post('/property-category', isAuth, propertyCategoryController.postCategory)
+router.put('/property-category/:id', isAuth, propertyCategoryController.updateCategory)
+
+router.get('/property-group', isAuth, propertyGroupController.getPropertyGroup)
+router.post('/property-group', isAuth, propertyGroupController.postPropertyGroup)
+router.put('/property-group/:id', isAuth, propertyGroupController.updatePropertyGroup)
 
 //This route is for ticket type
 router.get('/ticket-type', isAuth, ticketTypeController.getTicketType)
@@ -264,174 +294,61 @@ router.post('/visitor-type', isAuth, visitorTypeController.postType)
 router.put('/visitor-type/:id', isAuth, visitorTypeController.updateType)
 
 //This route is for payment report
-router.get(
-  '/graph/payment/report/:type',
-  isAuth,
-  reportController.getGraphPaymentReport
-)
-router.get(
-  '/table/payment/report/:start/:end/:type',
-  isAuth,
-  reportController.getTablePaymentReport
-)
+router.get('/graph/payment/report/:type', isAuth, reportController.getGraphPaymentReport)
+router.get('/table/payment/report/:start/:end/:type', isAuth, reportController.getTablePaymentReport)
 
 //This route is for financial report
-router.get(
-  '/table/financial/report/:start/:end/:type',
-  isAuth,
-  reportController.getFinancialReport
-)
+router.get('/table/financial/report/:start/:end/:type', isAuth, reportController.getFinancialReport)
 
 //This route is for tenant
 router.get('/tenant', isAuth, tenantController.getTenantAPIController)
-router.get(
-  '/tenant/create/data',
-  isAuth,
-  tenantController.getTenantCreateAPIController
-)
+router.get('/tenant/create/data', isAuth, tenantController.getTenantCreateAPIController)
 router.get('/tenant/edit/:id', isAuth, tenantController.getEditTenantAPI)
-router.post(
-  '/tenant',
-  isAuth,
-  imageUpload('photo'),
-  tenantController.postTenantAPIController
-)
-router.put(
-  '/tenant/update/:id',
-  imageUpload('photo'),
-  isAuth,
-  tenantController.putTenantController
-)
+router.post('/tenant', isAuth, imageUpload('photo'), tenantController.postTenantAPIController)
+router.put('/tenant/update/:id', imageUpload('photo'), isAuth, tenantController.putTenantController)
 
 //THis is the route for admin push notification
-router.get(
-  '/user/push/notification',
-  isAuth,
-  panicAlertController.getPanicALertAPI
-)
+router.get('/user/push/notification', isAuth, panicAlertController.getPanicALertAPI)
 
 router.get('/user/push/create', isAuth, panicAlertController.getPanicCreateAPI)
-router.post(
-  '/user/push/notification',
-  isAuth,
-  panicAlertController.postPanicController
-)
+router.post('/user/push/notification', isAuth, panicAlertController.postPanicController)
 
 //This is the router for sla config
-router.get(
-  '/sla/config/data',
-  isAuth,
-  slaConfigController.getSLAConfigController
-)
-router.post(
-  '/sla/post/data',
-  isAuth,
-  slaConfigController.postSLABreachController
-)
+router.get('/sla/config/data', isAuth, slaConfigController.getSLAConfigController)
+router.post('/sla/post/data', isAuth, slaConfigController.postSLABreachController)
 
 //This is the route for sla report
-router.get(
-  '/sla/config/report',
-  isAuth,
-  reportController.getSLAReportController
-)
+router.get('/sla/config/report', isAuth, reportController.getSLAReportController)
 
 //This is route for escalation
-router.get(
-  '/escalation/data',
-  isAuth,
-  complainController.getEscalatedComplainController
-)
+router.get('/escalation/data', isAuth, complainController.getEscalatedComplainController)
 
 //This is the route for amenities
-router.get(
-  '/amenity/fetch/data',
-  isAuth,
-  amenityController.getAmenityAPIController
-)
-router.post(
-  '/amenity/post/data',
-  isAuth,
-  amenityController.postAmenityAPIController
-)
-router.put(
-  '/amenity/put/data/:id',
-  isAuth,
-  amenityController.putAmenityAPIController
-)
+router.get('/amenity/fetch/data', isAuth, amenityController.getAmenityAPIController)
+router.get('/amenity/create/data', isAuth, amenityController.getAmenityCreateAPIController)
+router.get("/amenity/edit/data/:id", isAuth, amenityController?.getEditAmenityAPIController)
+router.get("/amenity/toggle/data/:id", isAuth, amenityController.getAmenityToggleAPIController)
+router.post('/amenity/post/data', isAuth, createAmenityUpload, amenityController.postAmenityAPIController)
+router.put('/amenity/put/data/:id', isAuth, createAmenityUpload, amenityController.putAmenityAPIController)
 
 //This is the route for amenity booking
-router.get(
-  '/amenity/booking/list',
-  isAuth,
-  amenityController.getAmenityBookingListController
-)
-router.get(
-  '/amenity/booking/create',
-  isAuth,
-  amenityController.getCreateAmenityBookingController
-)
-router.post(
-  '/amenity/booking/data/store',
-  isAuth,
-  amenityController.postAmenityBookingController
-)
-router.put(
-  '/amenity/booking/data/update/:id',
-  isAuth,
-  amenityController.putAmenityBookingController
-)
+router.get('/amenity/booking/list', isAuth, amenityController.getAmenityBookingListController)
+router.post('/amenity/booking/data/store', isAuth, amenityController.postAmenityBookingController)
 
 //This is the route for vendor
 router.get('/vendor/log/data', isAuth, vendorController.getVendorAPIController)
-router.post(
-  '/vendor/post/data',
-  isAuth,
-  vendorController.postVendorAPIController
-)
-router.put(
-  '/vendor/update/data/:id',
-  isAuth,
-  vendorController.putVendorAPIController
-)
+router.post('/vendor/post/data', isAuth, vendorController.postVendorAPIController)
+router.put('/vendor/update/data/:id', isAuth, vendorController.putVendorAPIController)
 
 //This is the route for category controller
-router.get(
-  '/location-category/log/data',
-  isAuth,
-  locationCategoryController.getLocationCategoryController
-)
-router.post(
-  '/asset/category/post/data',
-  isAuth,
-  locationCategoryController.postCategoryController
-)
-router.put(
-  '/asset/category/put/data/:id',
-  isAuth,
-  locationCategoryController.putCategoryController
-)
-
-//This is the route for asset location
-router.post(
-  '/asset/location/post/data',
-  isAuth,
-  locationCategoryController.postLocationController
-)
-router.put(
-  '/asset/location/put/data/:id',
-  isAuth,
-  locationCategoryController.putLocationController
-)
+router.get('/location-category/log/data', isAuth, locationCategoryController.getLocationCategoryController)
 
 //This is the route for asset
 router.get('/asset/fetch/data', isAuth, assetController?.getAssetAPIController)
-router.post('/asset/save/data', isAuth, assetController.postAssetAPIController)
-router.put(
-  '/asset/update/data/:id',
-  isAuth,
-  assetController.putAssetAPIController
-)
+router.get("/asset/create/data", isAuth, assetController.getAssetCreateData)
+router.get("/asset/edit/data/:id", isAuth, assetController.getAssetEditData)
+router.post('/asset/save/data', isAuth, uploadAsset, assetController.postAssetAPIController)
+router.post("/asset/update/data/:id", isAuth, uploadAsset, assetController.putAssetAPIController)
 
 //THis is the route for amc
 router.get('/amc/fetch/data', isAuth, amcAPIController.getAMCAPIController)
@@ -439,52 +356,38 @@ router.post('/amc/save/data', isAuth, amcAPIController.postAMCController)
 router.put('/amc/update/data/:id', isAuth, amcAPIController.putAMCController)
 
 //This route is for inspection template
-router.get(
-  '/inspection/template/data',
-  isAuth,
-  inspectionController.getInpectionTemplateData
-)
-router.post(
-  '/inspection/template/save/data',
-  isAuth,
-  inspectionController.postInspectionTemplateController
-)
-router.put(
-  '/inspection/template/update/data/:id',
-  isAuth,
-  inspectionController.putInspectionTemplateController
-)
+router.get('/inspection/template/data', isAuth, inspectionController.getInpectionTemplateData)
+router.post('/inspection/template/save/data', isAuth, inspectionController.postInspectionTemplateController)
+router.put('/inspection/template/update/data/:id', isAuth, inspectionController.putInspectionTemplateController)
 
 //This is the route for inspection
-router.get(
-  '/inspection-schedule/fetch/data',
-  isAuth,
-  inspectionScheduleController.getInspectionScheduleAPI
-)
-router.post(
-  '/inspection-schedule/save',
-  isAuth,
-  inspectionScheduleController.postInspectionScheduleController
-)
-router.put(
-  '/inspection-schedule/update/:id',
-  isAuth,
-  inspectionScheduleController.putInspectionScheduleController
-)
+router.get('/inspection-schedule/fetch/data', isAuth, inspectionScheduleController.getInspectionScheduleAPI)
+router.post('/inspection-schedule/save', isAuth, inspectionScheduleController.postInspectionScheduleController)
+router.put('/inspection-schedule/update/:id', isAuth, inspectionScheduleController.putInspectionScheduleController)
 
 //This is the route for document
 router.get('/document/fetch/data', isAuth, documentController.getDocument)
-router.post(
-  '/document/save/data',
-  isAuth,
-  documentUpload.array('documents', 20), // 'documents' matches form payload key, max 20 files
-  documentController.postDocument
-)
-router.put(
-  '/document/update/data/:id',
-  isAuth,
-  documentUpload.array('documents', 20),
-  documentController.putDocument
-)
+router.post('/document/save/data', isAuth, documentUpload.array('documents', 20), documentController.postDocument)
+router.put('/document/update/data/:id', isAuth, documentUpload.array('documents', 20), documentController.putDocument)
+
+//This route is for property management
+router.get("/property/fetch/data", isAuth, propertyAPIController.getPropertyDataAPIController)
+router.get("/property/edit/data/:id", isAuth, uploadField, propertyAPIController?.getPropertyEditDataAPIController)
+router.get("/property/create/data", isAuth, propertyAPIController?.getCreateFormAPIController)
+router.post("/property/save/data", isAuth, uploadField, propertyAPIController?.postPropertyAPIController)
+router.post("/property/update/data/:id", isAuth, uploadField, propertyAPIController?.putPropertyAPIController)
+
+
+const contactFiles = contactUpload.fields([
+  { name: "photo", maxCount: 1 },
+  { name: "kycFiles", maxCount: 20 },
+]);
+
+//This route is for contact
+router.get('/contact/fetch/data', isAuth, contactAPIController.getContactAPIController)
+router.post("/contact/save/data", isAuth, ...contactFiles, contactAPIController.postContactAPIController);
+router.get('/contact/create/data', isAuth, contactAPIController.getContactCreateAPIController)
+router.get('/contact/edit/data/:id', isAuth, contactAPIController.getContactEditAPIController)
+router.post("/contact/update/data/:id", isAuth, ...contactFiles, contactAPIController.putContactAPIController);
 
 module.exports = router

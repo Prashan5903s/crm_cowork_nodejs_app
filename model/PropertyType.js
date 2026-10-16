@@ -1,6 +1,6 @@
 const mongoose = require('mongoose')
 
-const apartmentTypeSchema = new mongoose.Schema({
+const propertyTypeSchema = new mongoose.Schema({
     name: {
         type: String,
         maxLength: 255,
@@ -19,6 +19,8 @@ const apartmentTypeSchema = new mongoose.Schema({
         type: Date,
         required: false,
     }
+}, {
+    collection: 'property_type'
 })
 
-module.exports = mongoose.model('apartment_type', apartmentTypeSchema)
+module.exports = mongoose.model('property_type', propertyTypeSchema)
