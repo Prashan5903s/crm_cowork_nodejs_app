@@ -15,19 +15,20 @@ const dashboardController = require('../controller/Company/DashboardController')
 const noticeController = require('../controller/Company/NoticeController')
 const eventController = require('../controller/Company/EventController')
 const maintenanceController = require('../controller/Company/MaintenanceController')
+const leadAPIController = require("../controller/Company/LeadsController")
 const propertyAPIController = require("../controller/Company/PropertyAPIController")
 const amenityTypeAPIController = require("../controller/Company/Setting/AmenityTypeAPIController")
 const propertyTypeController = require('../controller/Company/Setting/PropertyTypeAPIController')
 const assetCategoryController = require("../controller/Company/Setting/AssetCategoryAPIController")
 const propertyCategoryController = require('../controller/Company/Setting/PropertyCategoryAPIController')
 const propertyGroupController = require('../controller/Company/Setting/PropertyGroupAPIController')
-const ticketTypeController = require('../controller/Company/TicketTypeController')
-const visitorTypeController = require('../controller/Company/VisitorTypeController')
+const leadDocumentTypeController = require("../controller/Company/Setting/LeadDocumentTypeAPIConttoller")
 const reportController = require('../controller/Company/ReportController')
 const tenantController = require('../controller/Company/TenantAPIController')
 const panicAlertController = require('../controller/Company/PanicAlertAPIController')
 const slaConfigController = require('../controller/Company/SLAConfigController')
 const vendorController = require('../controller/Company/VendorAPIController')
+const vendorCategoryController = require("../controller/Company/Setting/VendorCategoryAPIController")
 const locationCategoryController = require('../controller/Company/LocationCategoryController')
 const assetController = require('../controller/Company/AssetAPIController')
 const amcAPIController = require('../controller/Company/AMCAPIController')
@@ -35,8 +36,16 @@ const inspectionController = require('../controller/Company/InspectionAPIControl
 const contactCategoryAPIController = require("../controller/Company/Setting/ContactCategoryAPIController")
 const inspectionScheduleController = require('../controller/Company/InspectionScheduleAPIController')
 const amenityController = require('../controller/Company/AmenityAPIController')
+const LeadSourceAPIController = require("../controller/Company/Setting/LeadSourceAPIController")
 const documentController = require('../controller/Company/DocumentAPIController')
+const LeadPurposeAPIController = require("../controller/Company/Setting/LeadPurposeAPIController")
+const ContactMethodAPIController = require("../controller/Company/Setting/ContactMethodAPIController")
 const contactAPIController = require("../controller/Company/ContactAPIController")
+const LeadPropertyController = require("../controller/Company/Setting/LeadPropertyTypeAPIController")
+const LeadTypeAPIController = require("../controller/Company/Setting/LeadTypeAPIController")
+const DepartmentController = require("../controller/Company/DepartmentAPIController")
+const LeadMoveInLineController = require("../controller/Company/Setting/LeadMoveInTimelineAPIController")
+const LeadStatusAPIController = require("../controller/Company/Setting/LeadStatusAPIController")
 
 const createUpload = require('../util/upload')
 const createDocUpload = require('../util/uploadDocFile')
@@ -116,9 +125,25 @@ const documentUpload = createDocUpload(
   500 // Max size in MB
 )
 
+const { middleware: vendorUpload } = createUpload(
+  [
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'image/webp',
+    'image/svg+xml',
+  ], // allowed types
+  'uploads/vendor' // directory inside /public/
+)
+
 const { middleware: imageUpload } = createUpload(
   ['image/jpeg', 'image/png', 'image/jpg'], // allowed types
   'uploads/images' // directory inside /public/
+)
+
+const { middleware: imageLeadUpload } = createUpload(
+  ['image/jpeg', 'image/png', 'image/jpg'], // allowed types
+  'uploads/leads' // directory inside /public/
 )
 
 const { middleware: imageNoticeUpload } = createUpload(
@@ -131,16 +156,8 @@ const { middleware: imageEventUpload } = createUpload(
   'uploads/event' // directory inside /public/
 )
 
-router.get(
-  '/app/menu/label/listing/:sn',
-  isAuth,
-  appMenuController.getAppMenuCompanyListAPI
-)
-router.post(
-  '/app/menu/label/listing/:sn',
-  isAuth,
-  appMenuController.postCompanyMenuListAPI
-)
+router.get('/app/menu/label/listing/:sn', isAuth, appMenuController.getAppMenuCompanyListAPI)
+router.post('/app/menu/label/listing/:sn', isAuth, appMenuController.postCompanyMenuListAPI)
 
 //This route is for role
 router.get('/role', isAuth, roleController.getRoleAPI)
@@ -163,11 +180,7 @@ router.put('/floor/:floorId', isAuth, floorController.updateFloorAPI)
 router.get('/apartment', isAuth, apartmentController.getApartmentAPI)
 router.get('/apartment/create', isAuth, apartmentController.createApartmentAPI)
 router.post('/apartment', isAuth, apartmentController.postApartmentAPI)
-router.put(
-  '/apartment/:apartmentId',
-  isAuth,
-  apartmentController.updateApartmentAPI
-)
+router.put('/apartment/:apartmentId', isAuth, apartmentController.updateApartmentAPI)
 
 //This route is for camera
 router.get('/camera', isAuth, cameraController.getCameraController)
@@ -175,64 +188,26 @@ router.get('/camera', isAuth, cameraController.getCameraController)
 //This route is for Bill
 router.get('/bill/data/:type', isAuth, billController.getBillData)
 router.get('/bill/create', isAuth, billController.getCreateBill)
-router.post(
-  '/bill',
-  isAuth,
-  ...activityUpload.middleware('image'),
-  billController.postBillController
-)
-router.put(
-  '/bill/update/:billId',
-  isAuth,
-  ...activityUpload.middleware('image'),
-  billController.putBillController
-)
+router.post('/bill', isAuth, ...activityUpload.middleware('image'), billController.postBillController)
+router.put('/bill/update/:billId', isAuth, ...activityUpload.middleware('image'), billController.putBillController)
 
 //This route is for payment
 router.get('/payment', isAuth, paymentController.getPaymentController)
 router.post('/payment', isAuth, paymentController.postPaymentController)
 
 //This route is for User Bill
-router.get(
-  '/user/bill/:billId',
-  isAuth,
-  userBillController.getUserBillController
-)
-router.post(
-  '/user/bill/data/payment',
-  isAuth,
-  userBillController.postUserBillController
-)
+router.get('/user/bill/:billId', isAuth, userBillController.getUserBillController)
+router.post('/user/bill/data/payment', isAuth, userBillController.postUserBillController)
 
 //This route is for company
-router.get(
-  '/complain/data/:status',
-  isAuth,
-  complainController.getComplainController
-)
-router.get(
-  '/complain/create',
-  isAuth,
-  complainController.createComplainController
-)
-router.post(
-  '/complain/data/:id/:code',
-  isAuth,
-  complainController.postComplainController
-)
+router.get('/complain/data/:status', isAuth, complainController.getComplainController)
+router.get('/complain/create', isAuth, complainController.createComplainController)
+router.post('/complain/data/:id/:code', isAuth, complainController.postComplainController)
 
 //This is the route for escalated complain
-router.post(
-  '/escalated/complain/data/:code',
-  isAuth,
-  complainController.postEscalatedComplainController
-)
+router.post('/escalated/complain/data/:code', isAuth, complainController.postEscalatedComplainController)
 
-router.get(
-  '/complain/report/data',
-  isAuth,
-  complainController.getComplainReportDataAPI
-)
+router.get('/complain/report/data', isAuth, complainController.getComplainReportDataAPI)
 
 //This route is for dashboard
 router.get('/dashboard', isAuth, dashboardController.getDashboardDataAPI)
@@ -270,10 +245,52 @@ router.get('/amenity-type', isAuth, amenityTypeAPIController.getAmenityType)
 router.post('/amenity-type', isAuth, amenityTypeAPIController.postType)
 router.put('/amenity-type/:id', isAuth, amenityTypeAPIController.updateType)
 
+//This route is for lead status
+router.get('/lead-status', isAuth, LeadStatusAPIController?.getLeadStatus)
+router.post('/lead-status', isAuth, LeadStatusAPIController?.postType)
+router.put('/lead-status/:id', isAuth, LeadStatusAPIController.updateType)
+
+//This route is for lead source
+router.get('/lead-source', isAuth, LeadSourceAPIController.getLeadSource)
+router.post('/lead-source', isAuth, LeadSourceAPIController.postType)
+router.put('/lead-source/:id', isAuth, LeadSourceAPIController.updateType)
+
+//This route is for lead type
+router.get('/lead-type', isAuth, LeadTypeAPIController?.getLeadType)
+router.post('/lead-type', isAuth, LeadTypeAPIController.postType)
+router.put('/lead-type/:id', isAuth, LeadTypeAPIController.updateType)
+
+//This route is for lead document type
+router.get('/lead-document-type', isAuth, leadDocumentTypeController?.getLeadDocumentType)
+router.post('/lead-document-type', isAuth, leadDocumentTypeController?.postType)
+router.put('/lead-document-type/:id', isAuth, leadDocumentTypeController.updateType)
+
+router.get('/lead-property-type', isAuth, LeadPropertyController?.getLeadType)
+router.post('/lead-property-type', isAuth, LeadPropertyController.postType)
+router.put('/lead-property-type/:id', isAuth, LeadPropertyController.updateType)
+
+router.get('/lead-move-in-timeline', isAuth, LeadMoveInLineController?.getLeadMoveInLine)
+router.post('/lead-move-in-timeline', isAuth, LeadMoveInLineController?.postType)
+router.put('/lead-move-in-timeline/:id', isAuth, LeadMoveInLineController.updateType)
+
+//This route is for lead purpose
+router.get('/lead-purpose', isAuth, LeadPurposeAPIController.getLeadPurpose)
+router.post('/lead-purpose', isAuth, LeadPurposeAPIController.postType)
+router.put('/lead-purpose/:id', isAuth, LeadPurposeAPIController.updateType)
+
+//This route is for contact method
+router.get('/contact-method', isAuth, ContactMethodAPIController.getConatactMethod)
+router.post('/contact-method', isAuth, ContactMethodAPIController.postType)
+router.put('/contact-method/:id', isAuth, ContactMethodAPIController.updateType)
+
 //This route is for contact category
 router.get('/contact-category', isAuth, contactCategoryAPIController?.getContactCategoryAPIController)
 router.post('/contact-category', isAuth, contactCategoryAPIController?.postContactCategoryAPIController)
 router.put('/contact-category/:id', isAuth, contactCategoryAPIController?.putContactCategoryAPIController)
+
+router.get('/vendor-category', isAuth, vendorCategoryController?.getVendorCategory)
+router.post('/vendor-category', isAuth, vendorCategoryController.postType)
+router.put('/vendor-category/:id', isAuth, vendorCategoryController.updateType)
 
 router.get('/property-category', isAuth, propertyCategoryController.getPropertyCategory)
 router.post('/property-category', isAuth, propertyCategoryController.postCategory)
@@ -282,16 +299,6 @@ router.put('/property-category/:id', isAuth, propertyCategoryController.updateCa
 router.get('/property-group', isAuth, propertyGroupController.getPropertyGroup)
 router.post('/property-group', isAuth, propertyGroupController.postPropertyGroup)
 router.put('/property-group/:id', isAuth, propertyGroupController.updatePropertyGroup)
-
-//This route is for ticket type
-router.get('/ticket-type', isAuth, ticketTypeController.getTicketType)
-router.post('/ticket-type', isAuth, ticketTypeController.postType)
-router.put('/ticket-type/:id', isAuth, ticketTypeController.updateType)
-
-//This route is for visitor type
-router.get('/visitor-type', isAuth, visitorTypeController.getVisitorType)
-router.post('/visitor-type', isAuth, visitorTypeController.postType)
-router.put('/visitor-type/:id', isAuth, visitorTypeController.updateType)
 
 //This route is for payment report
 router.get('/graph/payment/report/:type', isAuth, reportController.getGraphPaymentReport)
@@ -337,8 +344,10 @@ router.post('/amenity/booking/data/store', isAuth, amenityController.postAmenity
 
 //This is the route for vendor
 router.get('/vendor/log/data', isAuth, vendorController.getVendorAPIController)
-router.post('/vendor/post/data', isAuth, vendorController.postVendorAPIController)
-router.put('/vendor/update/data/:id', isAuth, vendorController.putVendorAPIController)
+router.get("/vendor/create/data", isAuth, vendorController.getVendorCreateAPIController)
+router.get("/vendor/edit/data/:id", isAuth, vendorController.getVendorEditData)
+router.post('/vendor/save/data', isAuth, vendorUpload('image'), vendorController.postVendorAPIController)
+router.post('/vendor/update/data/:id', isAuth, vendorUpload('image'), vendorController.putVendorAPIController)
 
 //This is the route for category controller
 router.get('/location-category/log/data', isAuth, locationCategoryController.getLocationCategoryController)
@@ -389,5 +398,19 @@ router.post("/contact/save/data", isAuth, ...contactFiles, contactAPIController.
 router.get('/contact/create/data', isAuth, contactAPIController.getContactCreateAPIController)
 router.get('/contact/edit/data/:id', isAuth, contactAPIController.getContactEditAPIController)
 router.post("/contact/update/data/:id", isAuth, ...contactFiles, contactAPIController.putContactAPIController);
+
+//This route is for lead controller
+router.get('/contacts/search', isAuth, leadAPIController.getSearchData)
+router.get('/leads/data', isAuth, leadAPIController.getLeadList)
+router.get("/leads/create/data", isAuth, leadAPIController.getLeadCreateData)
+router.post('/leads/save/data', isAuth, imageLeadUpload("photo"), leadAPIController.postCreateLead)
+
+
+//This route is for department
+router.get("/department/log/data", isAuth, DepartmentController?.getDepartmentAPI)
+router.get("/department/create/data", isAuth, DepartmentController.getDepartmentCreateData)
+router.get("/department/edit/data/:id", isAuth, DepartmentController?.getDepartmentEditData)
+router.post("/department/save/data", isAuth, DepartmentController.postDepartmentAPI)
+router.post("/department/update/data/:id", isAuth, DepartmentController.putDepartmentAPI)
 
 module.exports = router

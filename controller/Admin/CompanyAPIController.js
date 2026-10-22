@@ -29,7 +29,7 @@ exports.getCompanyIndexAPI = async (req, res, next) => {
 
         const role = await Role.find({
             created_by: {
-                $in: [userId, "68bc14b6b297142d6bfe639c"]
+                $in: [userId, "6ac87727ca7c0ad2edab51f9"]
             }
         })
             .select('type name description status permissions created_by')

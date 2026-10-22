@@ -12,7 +12,7 @@ exports.getRoleAPI = async (req, res, next) => {
         const userId = req.userId;
 
         const role = await Role.find({
-            created_by: { $in: [userId, "68bc14b6b297142d6bfe639c"] }
+            created_by: { $in: [userId, "6ac87727ca7c0ad2edab51f9"] }
         })
             .select('type name description status permissions created_by')
             .populate('company_id', 'first_name last_name email');

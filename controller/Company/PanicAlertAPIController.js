@@ -35,7 +35,7 @@ exports.getPanicCreateAPI = async (req, res, next) => {
     const userId = req?.userId
 
     const userType = await Role.find({
-      created_by: { $in: [userId, '68bc14b6b297142d6bfe639c'] }
+      created_by: { $in: [userId, '6ac87727ca7c0ad2edab51f9'] }
     }).select('name')
 
     const appConfig = await AppConfig.findOne({

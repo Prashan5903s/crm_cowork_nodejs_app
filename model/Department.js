@@ -1,35 +1,57 @@
-const mongoose = require('mongoose')
+const mongoose = require('mongoose');
 
-const departmentSchema = new mongoose.Schema({
-    name: {
-        type: String,
-        required: true,
-        maxlength: 50,
+const departmentSchema = new mongoose.Schema(
+    {
+        name: {
+            type: String,
+            required: true,
+            trim: true,
+            maxlength: 50,
+        },
+        manager: {
+            type: mongoose.Schema.Types.Mixed,
+            required: false,
+            ref: 'users', // Reference to 'users' collection
+        },
+        property_groups: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'property_group', // Reference to your property groups collection
+            }
+        ],
+        budget: {
+            type: Number,
+            required: false,
+            default: 0,
+            min: 0,
+        },
+        status: {
+            type: String,
+            enum: ['active', 'inactive'],
+            default: 'active',
+        },
+        description: {
+            type: String,
+            required: false,
+            trim: true,
+        },
+        company_id: {
+            type: mongoose.Schema.Types.ObjectId,
+            required: true,
+            ref: 'users', // Reference to 'companies' collection
+        },
+        created_by: {
+            type: mongoose.Schema.Types.ObjectId,
+            required: true,
+            ref: 'users', // Reference to 'users' collection
+        },
     },
-    status: {
-        type: Boolean,
-        required: false,
-        default: true
-    },
-    created_by: {
-        type: mongoose.Schema.Types.ObjectId, // BIGINT 
-        required: true, // created_by is required
-        ref: 'users', // Reference to 'users' collection
-    },
-    company_id: {
-        type: mongoose.Schema.Types.ObjectId, // BIGINT 
-        required: true, // company_id is required
-        ref: 'users', // Reference to 'companies' collection
-    },
-    created_at: {
-        type: Date, // DATETIME 
-        required: true, // created_at is required
-        default: Date.now, // Default to current date/time
-    },
-    updated_at: {
-        type: Date, // TIMESTAMP 
-        required: false, // updated_at is optional
-    },
-})
+    {
+        timestamps: {
+            createdAt: 'created_at',
+            updatedAt: 'updated_at',
+        },
+    }
+);
 
-module.exports = mongoose.model('department', departmentSchema)
+module.exports = mongoose.model('department', departmentSchema);
