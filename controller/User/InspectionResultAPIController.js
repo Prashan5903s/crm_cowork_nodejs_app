@@ -1,5 +1,5 @@
 const InspectionSchedule = require('../../model/InspectionSchedule')
-const WorkOrder = require('../../model/WorkOrder')
+
 const InspectionResult = require('../../model/InspectionResult')
 const { successResponse, errorResponse } = require('../../util/response')
 

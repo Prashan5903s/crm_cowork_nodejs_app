@@ -1,11 +1,11 @@
+const mongoose = require('mongoose')
+
 const Bill = require('../../model/Bill')
 const Complain = require('../../model/Complain')
 const User = require('../../model/User')
 const Event = require('../../model/Event')
 const Visitor = require('../../model/Visitor')
 const RoleUser = require('../../model/RoleUser')
-const Notice = require('../../model/Notice')
-const mongoose = require('mongoose')
 const UserBill = require('../../model/UserBill')
 const Maintenance = require('../../model/Maintenance')
 const {

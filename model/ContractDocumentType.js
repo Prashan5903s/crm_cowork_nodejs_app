@@ -1,6 +1,6 @@
 const mongoose = require('mongoose')
 
-const ticketTypeSchema = new mongoose.Schema({
+const contractDocumentTypeSchema = new mongoose.Schema({
     name: {
         type: String,
         maxLength: 255,
@@ -19,6 +19,8 @@ const ticketTypeSchema = new mongoose.Schema({
         type: Date,
         required: false,
     }
+}, {
+    collection: 'contract_document_type'
 })
 
-module.exports = mongoose.model('ticket_type', ticketTypeSchema)
+module.exports = mongoose.model('contract_document_type', contractDocumentTypeSchema)

@@ -7,8 +7,8 @@ const phoneSchema = new mongoose.Schema({
 
 const kycSchema = new mongoose.Schema({
     type: {
-        type: String,
-        enum: ["Aadhaar", "PAN", "Passport", "Driving License", "Voter ID", "GST"]
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "lead_document_type"
     },
     number: { type: String, trim: true },
     file: { type: String }
@@ -26,9 +26,9 @@ const contactSchema = new mongoose.Schema({
         ref: "contact_category",
         default: null
     },
-    country: { type: String, required: false, trim: true },
-    state: { type: String, required: false, trim: true },
-    city: { type: String, required: false, trim: true },
+    country: { type: String, trim: true },
+    state: { type: String, trim: true },
+    city: { type: String, trim: true },
     reference_number: { type: String, trim: true },
     full_name: { type: String, required: true, trim: true },
     nationality: { type: String, trim: true },
@@ -42,19 +42,19 @@ const contactSchema = new mongoose.Schema({
     created_by: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "users",
-        required: true,
-    },  
+        required: true
+    },
     updated_by: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "users",
-        required: false,
+        required: false
     }
 }, {
     collection: "contact",
     timestamps: true
 })
 
-// Helps the Quick Contact Search (name / email / phone)
+// Quick Contact Search (name / email / phone)
 contactSchema.index({ full_name: "text" })
 contactSchema.index({ emails: 1 })
 contactSchema.index({ "phones.number": 1 })

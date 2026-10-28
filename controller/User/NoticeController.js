@@ -1,6 +1,6 @@
 const User = require('../../model/User')
 const RoleUser = require('../../model/RoleUser')
-const Notice = require('../../model/Notice');
+
 const {
     errorResponse,
     successResponse

@@ -13,8 +13,6 @@ const designationAPIController = require('../controller/Admin/DesignationAPICont
 const ParticipationTypeAPIController = require('../controller/Admin/ParticipationTypeAPIController');
 const UserAPIController = require('../controller/Admin/UserAPIController');
 const CategoryController = require('../controller/Admin/CategoryController');
-const ModuleController = require('../controller/Company/ModuleController');
-const TrainingController = require('../controller/Company/TrainingControllerAPI');
 
 const createUpload = require('../util/upload');
 

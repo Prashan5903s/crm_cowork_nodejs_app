@@ -1,6 +1,5 @@
 const mongoose = require('mongoose')
 const Complain = require('../../model/Complain')
-const TicketType = require('../../model/TicketType')
 const User = require('../../model/User')
 const ComplainUser = require('../../model/ComplainUser')
 const ReviewComplain = require('../../model/ReviewComplain')

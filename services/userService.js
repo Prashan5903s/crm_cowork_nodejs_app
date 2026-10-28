@@ -3,7 +3,6 @@ const Role = require('../model/Role');
 const Country = require('../model/Country');
 const RoleUser = require('../model/RoleUser');
 const User = require('../model/User');
-const Zone = require('../model/Zone');
 const Department = require('../model/Department');
 const Designation = require('../model/Designation');
 const ParticipationType = require('../model/ParticipationType');
@@ -426,126 +425,6 @@ const getOrCreateParticipationType = async (name, userId) => {
     });
   }
   return participationType._id;
-};
-
-const getOrCreateZone = async (name, userId) => {
-  if (!name) return null;
-
-  const trimmedName = name.trim();
-  let zone = await Zone.findOne({
-    name: new RegExp(`^${trimmedName}$`, 'i'),
-    created_by: userId
-  });
-
-  if (!zone) {
-    zone = await Zone.create({
-      name: trimmedName,
-      status: true,
-      company_id: userId,
-      created_by: userId
-    });
-  }
-  return zone._id;
-};
-
-const getOrCreateBranch = async (zoneId, region = "", branch = "", userId) => {
-  try {
-
-    if (!region && !branch) {
-      return ["", "", true, ""];
-    }
-
-    const zone = await Zone.findOne({
-      _id: zoneId,
-      created_by: userId
-    });
-
-    if (!zone) {
-      return ["", "", false, "Zone not found for this user"];
-    }
-
-    const otherZones = await Zone.find({
-      _id: {
-        $ne: zoneId
-      },
-      created_by: userId,
-    });
-
-    if (region) {
-      for (const z of otherZones) {
-        const existingRegion = z.region.find(
-          (r) => r.name.toLowerCase() === region.toLowerCase()
-        );
-        if (existingRegion) {
-          return ["", "", false, `Region '${region}' already exists in another zone`];
-        }
-      }
-    }
-
-    if (branch) {
-      for (const z of otherZones) {
-        for (const r of z.region) {
-          const existingBranch = r.branch.find(
-            (b) => b.name.toLowerCase() === branch.toLowerCase()
-          );
-          if (existingBranch) {
-            return ["", "", false, `Branch '${branch}' already exists in another zone/region.`];
-          }
-        }
-      }
-    }
-
-    let regionObj = null;
-    let branchObj = null;
-
-    if (region) {
-      regionObj = zone.region.find(
-        (r) => r.name.toLowerCase() === region.toLowerCase()
-      );
-
-      if (!regionObj) {
-        regionObj = {
-          _id: new mongoose.Types.ObjectId(),
-          name: region,
-          company_id: zone.company_id,
-          master_company_id: zone.master_company_id,
-          parent_company_id: zone.parent_company_id,
-          created_by: userId,
-          branch: [],
-        };
-        zone.region.push(regionObj);
-      }
-    }
-
-    if (branch) {
-      if (!regionObj) {
-        return ["", "", false, "Branch cannot be created without a valid region in this zone."];
-      }
-
-      branchObj = regionObj.branch.find(
-        (b) => b.name.toLowerCase() === branch.toLowerCase()
-      );
-
-      if (!branchObj) {
-        branchObj = {
-          _id: new mongoose.Types.ObjectId(),
-          name: branch,
-        };
-        regionObj.branch.push(branchObj);
-      }
-    }
-
-    await zone.save();
-
-    return [
-      regionObj ? regionObj._id.toString() : "",
-      branchObj ? branchObj._id.toString() : "",
-      true,
-      "Region/Branch created or reused successfully",
-    ];
-  } catch (error) {
-    return ["", "", false, error.message || "Unexpected error"];
-  }
 };
 
 module.exports = {

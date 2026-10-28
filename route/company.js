@@ -3,14 +3,10 @@ const router = express.Router()
 const isAuth = require('../middleware/is-auth')
 const appMenuController = require('../controller/Company/AppMenuController')
 const roleController = require('../controller/Company/RoleAPIController')
-const towerController = require('../controller/Company/TowerController')
-const floorController = require('../controller/Company/FloorController')
-const apartmentController = require('../controller/Company/ApartmentController')
 const cameraController = require('../controller/Company/CameraController')
 const billController = require('../controller/Company/BillController')
 const paymentController = require('../controller/Company/PaymentController')
 const userBillController = require('../controller/Company/UserBillController')
-const complainController = require('../controller/Company/ComplainController')
 const dashboardController = require('../controller/Company/DashboardController')
 const noticeController = require('../controller/Company/NoticeController')
 const eventController = require('../controller/Company/EventController')
@@ -31,7 +27,6 @@ const vendorController = require('../controller/Company/VendorAPIController')
 const vendorCategoryController = require("../controller/Company/Setting/VendorCategoryAPIController")
 const locationCategoryController = require('../controller/Company/LocationCategoryController')
 const assetController = require('../controller/Company/AssetAPIController')
-const amcAPIController = require('../controller/Company/AMCAPIController')
 const inspectionController = require('../controller/Company/InspectionAPIController')
 const contactCategoryAPIController = require("../controller/Company/Setting/ContactCategoryAPIController")
 const inspectionScheduleController = require('../controller/Company/InspectionScheduleAPIController')
@@ -44,6 +39,9 @@ const contactAPIController = require("../controller/Company/ContactAPIController
 const LeadPropertyController = require("../controller/Company/Setting/LeadPropertyTypeAPIController")
 const LeadTypeAPIController = require("../controller/Company/Setting/LeadTypeAPIController")
 const DepartmentController = require("../controller/Company/DepartmentAPIController")
+const ContractAPIController = require("../controller/Company/ContractAPIController")
+const InvoiceAPIController = require("../controller/Company/InvoiceAPIController")
+const ContractDocumentTypeController = require("../controller/Company/Setting/ContractDocumentTypeController")
 const LeadMoveInLineController = require("../controller/Company/Setting/LeadMoveInTimelineAPIController")
 const LeadStatusAPIController = require("../controller/Company/Setting/LeadStatusAPIController")
 
@@ -81,6 +79,12 @@ const IMAGE_TYPES = [
   'image/webp', 'image/bmp', 'image/tiff'
 ];
 const IMAGE_EXTS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tif', '.tiff'];
+const DOC_TYPES_ALLOWED = [
+  ...IMAGE_TYPES,
+  'application/pdf',
+  'application/msword', // .doc
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+];
 
 const contactUpload = createUpload(
   [...IMAGE_TYPES], // default for any other field
@@ -98,6 +102,30 @@ const contactUpload = createUpload(
         'application/msword', // .doc
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
       ],
+      extensions: [...IMAGE_EXTS, '.pdf', '.doc', '.docx'],
+    },
+  }
+);
+
+const invoiceUpload = createUpload(
+  DOC_TYPES_ALLOWED,
+  'invoices', // Folder inside /public
+  30,         // MB per file
+  {
+    files: {
+      mimeTypes: DOC_TYPES_ALLOWED,
+      extensions: [...IMAGE_EXTS, '.pdf', '.doc', '.docx'],
+    },
+  }
+)
+
+const contractUpload = createUpload(
+  DOC_TYPES_ALLOWED,
+  'contracts',
+  30, // MB per file, matches the frontend limit
+  {
+    files: {
+      mimeTypes: DOC_TYPES_ALLOWED,
       extensions: [...IMAGE_EXTS, '.pdf', '.doc', '.docx'],
     },
   }
@@ -165,23 +193,6 @@ router.get('/role/create', isAuth, roleController.createRoleAPI)
 router.post('/role', isAuth, roleController.postRoleAPI)
 router.put('/role/:roleId', isAuth, roleController.putRoleAPI)
 
-//This route is for tower
-router.get('/tower', isAuth, towerController.getTowerAPI)
-router.post('/tower', isAuth, towerController.postTowerAPI)
-router.put('/tower/:towerId', isAuth, towerController.putTowerAPI)
-
-//This route is for floor
-router.get('/floor', isAuth, floorController.getFloorAPI)
-router.get('/floor/create', isAuth, floorController.getCreateAPI)
-router.post('/floor', isAuth, floorController.postFloorController)
-router.put('/floor/:floorId', isAuth, floorController.updateFloorAPI)
-
-//This route is for Apartment
-router.get('/apartment', isAuth, apartmentController.getApartmentAPI)
-router.get('/apartment/create', isAuth, apartmentController.createApartmentAPI)
-router.post('/apartment', isAuth, apartmentController.postApartmentAPI)
-router.put('/apartment/:apartmentId', isAuth, apartmentController.updateApartmentAPI)
-
 //This route is for camera
 router.get('/camera', isAuth, cameraController.getCameraController)
 
@@ -198,16 +209,6 @@ router.post('/payment', isAuth, paymentController.postPaymentController)
 //This route is for User Bill
 router.get('/user/bill/:billId', isAuth, userBillController.getUserBillController)
 router.post('/user/bill/data/payment', isAuth, userBillController.postUserBillController)
-
-//This route is for company
-router.get('/complain/data/:status', isAuth, complainController.getComplainController)
-router.get('/complain/create', isAuth, complainController.createComplainController)
-router.post('/complain/data/:id/:code', isAuth, complainController.postComplainController)
-
-//This is the route for escalated complain
-router.post('/escalated/complain/data/:code', isAuth, complainController.postEscalatedComplainController)
-
-router.get('/complain/report/data', isAuth, complainController.getComplainReportDataAPI)
 
 //This route is for dashboard
 router.get('/dashboard', isAuth, dashboardController.getDashboardDataAPI)
@@ -259,6 +260,11 @@ router.put('/lead-source/:id', isAuth, LeadSourceAPIController.updateType)
 router.get('/lead-type', isAuth, LeadTypeAPIController?.getLeadType)
 router.post('/lead-type', isAuth, LeadTypeAPIController.postType)
 router.put('/lead-type/:id', isAuth, LeadTypeAPIController.updateType)
+
+//This route is for contract document type  
+router.get('/contract-document-type', isAuth, ContractDocumentTypeController?.getContractDocumentType)
+router.post('/contract-document-type', isAuth, ContractDocumentTypeController.postType)
+router.put('/contract-document-type/:id', isAuth, ContractDocumentTypeController.updateType)
 
 //This route is for lead document type
 router.get('/lead-document-type', isAuth, leadDocumentTypeController?.getLeadDocumentType)
@@ -327,9 +333,6 @@ router.post('/sla/post/data', isAuth, slaConfigController.postSLABreachControlle
 //This is the route for sla report
 router.get('/sla/config/report', isAuth, reportController.getSLAReportController)
 
-//This is route for escalation
-router.get('/escalation/data', isAuth, complainController.getEscalatedComplainController)
-
 //This is the route for amenities
 router.get('/amenity/fetch/data', isAuth, amenityController.getAmenityAPIController)
 router.get('/amenity/create/data', isAuth, amenityController.getAmenityCreateAPIController)
@@ -358,11 +361,6 @@ router.get("/asset/create/data", isAuth, assetController.getAssetCreateData)
 router.get("/asset/edit/data/:id", isAuth, assetController.getAssetEditData)
 router.post('/asset/save/data', isAuth, uploadAsset, assetController.postAssetAPIController)
 router.post("/asset/update/data/:id", isAuth, uploadAsset, assetController.putAssetAPIController)
-
-//THis is the route for amc
-router.get('/amc/fetch/data', isAuth, amcAPIController.getAMCAPIController)
-router.post('/amc/save/data', isAuth, amcAPIController.postAMCController)
-router.put('/amc/update/data/:id', isAuth, amcAPIController.putAMCController)
 
 //This route is for inspection template
 router.get('/inspection/template/data', isAuth, inspectionController.getInpectionTemplateData)
@@ -401,7 +399,7 @@ router.post("/contact/update/data/:id", isAuth, ...contactFiles, contactAPIContr
 
 //This route is for lead controller
 router.get('/contacts/search', isAuth, leadAPIController.getSearchData)
-router.get('/leads/data', isAuth, leadAPIController.getLeadList)
+router.get('/leads/data/:view', isAuth, leadAPIController.getLeadList)
 router.get("/leads/create/data", isAuth, leadAPIController.getLeadCreateData)
 router.post('/leads/save/data', isAuth, imageLeadUpload("photo"), leadAPIController.postCreateLead)
 
@@ -412,5 +410,30 @@ router.get("/department/create/data", isAuth, DepartmentController.getDepartment
 router.get("/department/edit/data/:id", isAuth, DepartmentController?.getDepartmentEditData)
 router.post("/department/save/data", isAuth, DepartmentController.postDepartmentAPI)
 router.post("/department/update/data/:id", isAuth, DepartmentController.putDepartmentAPI)
+
+//This is the route for contract document type
+router.get("/contract/fetch/data", isAuth, ContractAPIController.getContractData)
+router.get("/contract/create/data", isAuth, ContractAPIController.getContractCreateData)
+router.post("/contract/create", isAuth, ContractAPIController.postCreateAPIController);
+router.post("/contract/:id/tenant", isAuth, ContractAPIController.setContractTenantAPIController);
+router.post("/contract/:id/properties", isAuth, ContractAPIController.setContractPropertyAPIController);
+router.post("/contract/:id/amenities", isAuth, ContractAPIController.setContractAmenityAPIController);
+router.post("/contract/:id/details", isAuth, ContractAPIController.upsertContractDetailAPIController);
+router.post("/contract/:id/details/delete", isAuth, ContractAPIController.deleteContractDetailAPIController);
+router.post("/contract/:id/documents", isAuth, contractUpload.array("files", 10), ContractAPIController.addContractDocumentAPIController);
+router.post("/contract/:id/documents/delete", isAuth, ContractAPIController.deleteContractDocumentAPIController);
+router.post("/contract/:id/save", isAuth, ContractAPIController.saveContractAPIController);
+router.post("/contract/:id/submit", isAuth, ContractAPIController.submitContractAPIController);
+router.post("/contract/:id/delete", isAuth, ContractAPIController.removeContractAPIController);
+router.get("/contract/:id", isAuth, ContractAPIController.getContractOneAPI);
+
+
+//This is the route for invoice
+router.get("/invoice/get/data", isAuth, InvoiceAPIController.getInvoiceData)
+router.get("/invoice/create/data", isAuth, InvoiceAPIController.getInvoiceCreateData)
+router.get("/invoice/edit/data/:id", isAuth, InvoiceAPIController.getInvoiceEditData)
+router.post("/invoice/save/data", isAuth, invoiceUpload.array("files", 10), InvoiceAPIController.postInvoiceAPIController)
+router.post("/invoice/update/data/:id", isAuth, invoiceUpload.array("files", 10), InvoiceAPIController.updateInvoiceAPIController)
+router.post("/invoice/delete/data/:id", isAuth, InvoiceAPIController.deleteInvoiceAPIController)
 
 module.exports = router

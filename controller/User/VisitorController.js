@@ -1,9 +1,9 @@
 const mongoose = require('mongoose')
-const Visitor = require('../../model/Visitor')
+
 const Apartment = require('../../model/Apartment')
 const User = require('../../model/User')
 const RoleUser = require('../../model/RoleUser')
-const VisitorType = require('../../model/VisitorType')
+
 const { errorResponse, successResponse } = require('../../util/response')
 
 function generateSixDigitCode () {

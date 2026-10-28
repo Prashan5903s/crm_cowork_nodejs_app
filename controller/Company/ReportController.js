@@ -2,10 +2,7 @@ const AppConfig = require('../../model/AppConfig')
 const SLAConfig = require('../../model/SLAConfig')
 const Bill = require('../../model/Bill')
 const User = require('../../model/User')
-const Tower = require('../../model/Tower')
-const Floor = require('../../model/Floor')
 const mongoose = require('mongoose')
-const TicketType = require('../../model/TicketType')
 const Complain = require('../../model/Complain')
 const UserBill = require('../../model/UserBill')
 const Maintenance = require('../../model/Maintenance')
@@ -418,12 +415,7 @@ exports.getSLAReportController = async (req, res, next) => {
     } = req.query
 
     const [towers, floors, ticketType, users] = await Promise.all([
-      Tower.find({
-        created_by: userId,
-        status: true
-      })
-        .select('_id name')
-        .lean(),
+      [],
 
       Floor.find({
         created_by: userId,
