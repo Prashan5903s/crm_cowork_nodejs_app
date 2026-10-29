@@ -41,6 +41,7 @@ const LeadTypeAPIController = require("../controller/Company/Setting/LeadTypeAPI
 const DepartmentController = require("../controller/Company/DepartmentAPIController")
 const ContractAPIController = require("../controller/Company/ContractAPIController")
 const InvoiceAPIController = require("../controller/Company/InvoiceAPIController")
+const PaymentAPIController = require("../controller/Company/PaymentAPIController")
 const ContractDocumentTypeController = require("../controller/Company/Setting/ContractDocumentTypeController")
 const LeadMoveInLineController = require("../controller/Company/Setting/LeadMoveInTimelineAPIController")
 const LeadStatusAPIController = require("../controller/Company/Setting/LeadStatusAPIController")
@@ -164,6 +165,17 @@ const { middleware: vendorUpload } = createUpload(
   'uploads/vendor' // directory inside /public/
 )
 
+const { middleware: paymentUpload } = createUpload(
+  [
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'image/webp',
+    'image/svg+xml',
+  ],
+  'uploads/payment'
+)
+
 const { middleware: imageUpload } = createUpload(
   ['image/jpeg', 'image/png', 'image/jpg'], // allowed types
   'uploads/images' // directory inside /public/
@@ -183,6 +195,11 @@ const { middleware: imageEventUpload } = createUpload(
   ['image/jpeg', 'image/png', 'image/jpg'], // allowed types
   'uploads/event' // directory inside /public/
 )
+
+const contactFiles = contactUpload.fields([
+  { name: "photo", maxCount: 1 },
+  { name: "kycFiles", maxCount: 20 },
+]);
 
 router.get('/app/menu/label/listing/:sn', isAuth, appMenuController.getAppMenuCompanyListAPI)
 router.post('/app/menu/label/listing/:sn', isAuth, appMenuController.postCompanyMenuListAPI)
@@ -384,12 +401,6 @@ router.get("/property/create/data", isAuth, propertyAPIController?.getCreateForm
 router.post("/property/save/data", isAuth, uploadField, propertyAPIController?.postPropertyAPIController)
 router.post("/property/update/data/:id", isAuth, uploadField, propertyAPIController?.putPropertyAPIController)
 
-
-const contactFiles = contactUpload.fields([
-  { name: "photo", maxCount: 1 },
-  { name: "kycFiles", maxCount: 20 },
-]);
-
 //This route is for contact
 router.get('/contact/fetch/data', isAuth, contactAPIController.getContactAPIController)
 router.post("/contact/save/data", isAuth, ...contactFiles, contactAPIController.postContactAPIController);
@@ -402,7 +413,6 @@ router.get('/contacts/search', isAuth, leadAPIController.getSearchData)
 router.get('/leads/data/:view', isAuth, leadAPIController.getLeadList)
 router.get("/leads/create/data", isAuth, leadAPIController.getLeadCreateData)
 router.post('/leads/save/data', isAuth, imageLeadUpload("photo"), leadAPIController.postCreateLead)
-
 
 //This route is for department
 router.get("/department/log/data", isAuth, DepartmentController?.getDepartmentAPI)
@@ -427,7 +437,6 @@ router.post("/contract/:id/submit", isAuth, ContractAPIController.submitContract
 router.post("/contract/:id/delete", isAuth, ContractAPIController.removeContractAPIController);
 router.get("/contract/:id", isAuth, ContractAPIController.getContractOneAPI);
 
-
 //This is the route for invoice
 router.get("/invoice/get/data", isAuth, InvoiceAPIController.getInvoiceData)
 router.get("/invoice/create/data", isAuth, InvoiceAPIController.getInvoiceCreateData)
@@ -435,5 +444,11 @@ router.get("/invoice/edit/data/:id", isAuth, InvoiceAPIController.getInvoiceEdit
 router.post("/invoice/save/data", isAuth, invoiceUpload.array("files", 10), InvoiceAPIController.postInvoiceAPIController)
 router.post("/invoice/update/data/:id", isAuth, invoiceUpload.array("files", 10), InvoiceAPIController.updateInvoiceAPIController)
 router.post("/invoice/delete/data/:id", isAuth, InvoiceAPIController.deleteInvoiceAPIController)
+
+//THis is the router for payment
+router.get("/payment/get/data", isAuth, PaymentAPIController.getPaymentData)
+router.get("/payment/create/data", isAuth, PaymentAPIController.getPaymentCreateAPI)
+router.get("/payment/edit/data/:id", isAuth, PaymentAPIController.getPaymentEditAPI)
+router.post("/payment/save/data", isAuth, paymentUpload("documents"), PaymentAPIController.savePaymentAPIController)
 
 module.exports = router

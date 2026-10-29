@@ -58,22 +58,10 @@ const getEditable = async (req) => {
 
 const done = (res, c) => res.json({ success: true, data: c });
 
-const toContract = (body) => ({
-    kind: body.kind,
-    status: body.status,
-    tenant: body.tenant?._id,
-    properties: (body.properties || []).map((p) => p._id),
-    amenities: (body.amenities || []).map((a) => ({
-        amenity: a._id,
-        freeSlots: a.freeSlots,
-        monthlyFee: body.details?.find((d) => d.amenityId === a._id)?.monthlyFee || 0,
-    })),
-    details: body.details,
-    documents: (body.documents || []).map(({ id, type, name, size }) => ({ id, type, name, size })),
-    value: body.value,
-    start: body.start,
-    end: body.end,
-});
+const resolveStatus = (c) =>
+    c.tenant && (c.properties?.length > 0 || c.amenities?.length > 0)
+        ? "Approved"
+        : "Draft";
 
 exports.getContractData = async (req, res, next) => {
     try {
@@ -242,9 +230,11 @@ exports.saveContractAPIController = wrap(async (req, res) => {
         }));
     }
     recalc(c);
+    c.status = resolveStatus(c);
+    c.updated_by = req.userId;
     await c.save();
     done(res, c);
-});
+})
 
 // "Submit for Approval"
 exports.submitContractAPIController = wrap(async (req, res) => {

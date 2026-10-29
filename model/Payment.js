@@ -1,46 +1,50 @@
-const mongoose = require('mongoose')
-const Counter = require('../model/Counter');
+const mongoose = require("mongoose");
+const Counter = require("../model/Counter");
 
 const paymentSchema = new mongoose.Schema({
-    bill_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Bill", // ✅ Relation with Bill model
-        required: true
-    },
-    user_bill_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        default: null
-    },
     receipt_no: {
         type: String,
-        unique: true, // ✅ ensures no duplicate receipt numbers
+        unique: true,
+        index: true
     },
-    amount: {
-        type: Number, // ✅ Better as Number, not String
+    contract_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "contract", // must match the name used in mongoose.model("Contract", ...)
+        required: true,
+        index: true
+    },
+    total_payment_amount: {
+        type: Number,
+        required: true,
+        min: [0.01, "Payment amount must be greater than zero"]
+    },
+    payment_date: {
+        type: Date,
         required: true
     },
-    bank_name: {
+    payment_method: {
         type: String,
+        enum: ["Cash", "Cheque", "Bank Transfer", "UPI", "Card"],
+        required: true
+    },
+    ref_no: {
+        type: String,
+        trim: true,
         maxLength: 255
+    },
+    remark: {
+        type: String,
+        trim: true,
+        maxLength: 5000
+    },
+    documents: {
+        type: [String],
+        default: []
     },
     status: {
         type: String,
-        maxLength: 255,
+        enum: ["Unpaid", "Paid", "Partial Paid"],
         required: true
-    },
-    paid_remark: {
-        type: String,
-        maxLength: 5000
-    },
-    neft_no: String,
-    neft_date: Date, // ✅ Date instead of string
-    cheque_no: String,
-    cheque_date: Date,
-    demand_draft_no: String,
-    demand_draft_date: Date,
-    payment_mode: {
-        type: String,
-        mxLength: 10
     },
     created_by: {
         type: mongoose.Schema.Types.ObjectId,
@@ -50,34 +54,21 @@ const paymentSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     }
-})
-
-paymentSchema.pre('save', async function (next) {
-    if (this.receipt_no) return next(); // Already set
-
-    // Get next sequence
-    const counter = await Counter.findByIdAndUpdate(
-        'receipt', {
-            $inc: {
-                seq: 1
-            }
-        }, {
-            new: true,
-            upsert: true
-        }
-    );
-
-    const seq = counter.seq;
-    const now = new Date();
-    const yyyy = now.getFullYear();
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const dd = String(now.getDate()).padStart(2, '0');
-    const dateStr = `${yyyy}${mm}${dd}`;
-    const seqPadded = String(seq).padStart(6, '0');
-
-    this.receipt_no = `RCPT-${dateStr}-${seqPadded}`;
-    next();
 });
 
+paymentSchema.pre("save", async function () {
+    if (this.receipt_no) return; // already set
 
-module.exports = mongoose.model('Payment', paymentSchema)
+    const counter = await Counter.findByIdAndUpdate(
+        "receipt",
+        { $inc: { seq: 1 } },
+        { new: true, upsert: true }
+    );
+
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+
+    this.receipt_no = `RCPT-${dateStr}-${String(counter.seq).padStart(6, "0")}`;
+});
+
+module.exports = mongoose.model("Payment", paymentSchema);
