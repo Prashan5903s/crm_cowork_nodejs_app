@@ -42,8 +42,11 @@ const DepartmentController = require("../controller/Company/DepartmentAPIControl
 const ContractAPIController = require("../controller/Company/ContractAPIController")
 const InvoiceAPIController = require("../controller/Company/InvoiceAPIController")
 const PaymentAPIController = require("../controller/Company/PaymentAPIController")
+<<<<<<< HEAD
 const followUpController = require('../controller/Company/FollowUpAPIController')
 const proposalController = require('../controller/Company/ProposalAPIController') // use your real filename
+=======
+>>>>>>> 78838d13da9bb4270c6db9bef5ecc0d0e4d3384c
 const ContractDocumentTypeController = require("../controller/Company/Setting/ContractDocumentTypeController")
 const LeadMoveInLineController = require("../controller/Company/Setting/LeadMoveInTimelineAPIController")
 const LeadStatusAPIController = require("../controller/Company/Setting/LeadStatusAPIController")
