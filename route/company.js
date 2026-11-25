@@ -31,6 +31,7 @@ const inspectionController = require('../controller/Company/InspectionAPIControl
 const contactCategoryAPIController = require("../controller/Company/Setting/ContactCategoryAPIController")
 const inspectionScheduleController = require('../controller/Company/InspectionScheduleAPIController')
 const amenityController = require('../controller/Company/AmenityAPIController')
+const visitorTypeAPIController = require("../controller/Company/VisitorTypeController")
 const LeadSourceAPIController = require("../controller/Company/Setting/LeadSourceAPIController")
 const documentController = require('../controller/Company/DocumentAPIController')
 const LeadPurposeAPIController = require("../controller/Company/Setting/LeadPurposeAPIController")
@@ -43,17 +44,23 @@ const ContractAPIController = require("../controller/Company/ContractAPIControll
 const InvoiceAPIController = require("../controller/Company/InvoiceAPIController")
 const PaymentAPIController = require("../controller/Company/PaymentAPIController")
 const followUpController = require('../controller/Company/FollowUpAPIController')
+const visitorController = require('../controller/Company/VisitorController')
 const proposalController = require('../controller/Company/ProposalAPIController') // use your real filename
 const ContractDocumentTypeController = require("../controller/Company/Setting/ContractDocumentTypeController")
 const LeadMoveInLineController = require("../controller/Company/Setting/LeadMoveInTimelineAPIController")
 const LeadStatusAPIController = require("../controller/Company/Setting/LeadStatusAPIController")
 
+const visitorValidation = require('../validation/VisitorController')
 const createUpload = require('../util/upload')
 const createDocUpload = require('../util/uploadDocFile')
-const { uploadField } = require("../util/propertyMulter")
+const {
+  uploadField
+} = require("../util/propertyMulter")
 const createAmenityUpload = require("../util/uploadAmenity")
 
-const { uploadAsset } = require("../util/uploadAsset")
+const {
+  uploadAsset
+} = require("../util/uploadAsset")
 
 const activityUpload = createUpload(
   [
@@ -113,13 +120,20 @@ const contactUpload = createUpload(
 const invoiceUpload = createUpload(
   DOC_TYPES_ALLOWED,
   'invoices', // Folder inside /public
-  30,         // MB per file
+  30, // MB per file
   {
     files: {
       mimeTypes: DOC_TYPES_ALLOWED,
       extensions: [...IMAGE_EXTS, '.pdf', '.doc', '.docx'],
     },
   }
+)
+
+const {
+  middleware: imageVisitorUpload
+} = createUpload(
+  ['image/jpeg', 'image/png', 'image/jpg'], // allowed types
+  'uploads/visitor' // directory inside /public/
 )
 
 const contractUpload = createUpload(
@@ -156,7 +170,9 @@ const documentUpload = createDocUpload(
   500 // Max size in MB
 )
 
-const { middleware: vendorUpload } = createUpload(
+const {
+  middleware: vendorUpload
+} = createUpload(
   [
     'image/jpeg',
     'image/png',
@@ -167,7 +183,9 @@ const { middleware: vendorUpload } = createUpload(
   'uploads/vendor' // directory inside /public/
 )
 
-const { middleware: paymentUpload } = createUpload(
+const {
+  middleware: paymentUpload
+} = createUpload(
   [
     'image/jpeg',
     'image/png',
@@ -178,29 +196,42 @@ const { middleware: paymentUpload } = createUpload(
   'uploads/payment'
 )
 
-const { middleware: imageUpload } = createUpload(
+const {
+  middleware: imageUpload
+} = createUpload(
   ['image/jpeg', 'image/png', 'image/jpg'], // allowed types
   'uploads/images' // directory inside /public/
 )
 
-const { middleware: imageLeadUpload } = createUpload(
+const {
+  middleware: imageLeadUpload
+} = createUpload(
   ['image/jpeg', 'image/png', 'image/jpg'], // allowed types
   'uploads/leads' // directory inside /public/
 )
 
-const { middleware: imageNoticeUpload } = createUpload(
+const {
+  middleware: imageNoticeUpload
+} = createUpload(
   ['image/jpeg', 'image/png', 'image/jpg'], // allowed types
   'uploads/notice' // directory inside /public/
 )
 
-const { middleware: imageEventUpload } = createUpload(
+const {
+  middleware: imageEventUpload
+} = createUpload(
   ['image/jpeg', 'image/png', 'image/jpg'], // allowed types
   'uploads/event' // directory inside /public/
 )
 
-const contactFiles = contactUpload.fields([
-  { name: "photo", maxCount: 1 },
-  { name: "kycFiles", maxCount: 20 },
+const contactFiles = contactUpload.fields([{
+    name: "photo",
+    maxCount: 1
+  },
+  {
+    name: "kycFiles",
+    maxCount: 20
+  },
 ]);
 
 router.get('/app/menu/label/listing/:sn', isAuth, appMenuController.getAppMenuCompanyListAPI)
@@ -264,6 +295,10 @@ router.put('/asset-category/:id', isAuth, assetCategoryController.updateType)
 router.get('/amenity-type', isAuth, amenityTypeAPIController.getAmenityType)
 router.post('/amenity-type', isAuth, amenityTypeAPIController.postType)
 router.put('/amenity-type/:id', isAuth, amenityTypeAPIController.updateType)
+
+router.get('/visitor-type', isAuth, visitorTypeAPIController.getVisitorType)
+router.post('/visitor-type', isAuth, visitorTypeAPIController.postType)
+router.put('/visitor-type/:id', isAuth, visitorTypeAPIController.updateType)
 
 //This route is for lead status
 router.get('/lead-status', isAuth, LeadStatusAPIController?.getLeadStatus)
@@ -460,5 +495,54 @@ router.put('/follow-up/put/data/:id', isAuth, followUpController.putFollowUp)
 
 router.get('/proposal/create/data', isAuth, proposalController.getProposalCreateAPI)
 router.post('/proposal/save/data', isAuth, proposalController.createProposalAPI)
+
+router.get('/visitor', isAuth, visitorController.getVisitorController)
+
+router.get(
+  '/user-visitor/:start/:end',
+  isAuth,
+  visitorController.getVisitorFilterController
+)
+
+router.get(
+  '/visitor/otp/code/:otp',
+  isAuth,
+  visitorController.getVisitorHappyCode
+)
+
+// Host / member dropdown data (declared before any "/visitor/:id" style route)
+router.get(
+  '/visitor/create/data',
+  isAuth,
+  visitorController.createVisitorController
+)
+
+router.post(
+  '/visitor',
+  isAuth,
+  imageVisitorUpload('id_proof'),
+  visitorValidation.postVisitor,
+  visitorController.postVisitorController
+)
+
+router.put(
+  '/visitor/update/:id',
+  isAuth,
+  imageVisitorUpload('id_proof'),
+  visitorValidation.postVisitor,
+  visitorController.putVisitiorController
+)
+
+router.get(
+  '/visitor/allow/gateIn/:status/:id',
+  isAuth,
+  visitorController.allowGateInFunc
+)
+
+router.get(
+  '/visitor/user/exit/data/:id',
+  isAuth,
+  visitorController.getVisitorExitData
+)
 
 module.exports = router

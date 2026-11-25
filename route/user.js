@@ -8,7 +8,6 @@ const isAuth = require('../middleware/is-auth')
 const BillController = require('../controller/User/BillController')
 const ComplainController = require('../controller/User/MyComplainController')
 const complainResolvedController = require('../controller/User/ComplainResolvedController')
-const visitorController = require('../controller/User/VisitorController')
 const dashboardController = require('../controller/User/DashboardController')
 const noticeController = require('../controller/User/NoticeController')
 const eventController = require('../controller/User/EventController')
@@ -37,11 +36,6 @@ const { middleware: imageUpload } = createUpload(
 const { middleware: imageComplainUpload } = createUpload(
   ['image/jpeg', 'image/png', 'image/jpg'], // allowed types
   'uploads/complain' // directory inside /public/
-)
-
-const { middleware: imageVisitorUpload } = createUpload(
-  ['image/jpeg', 'image/png', 'image/jpg'], // allowed types
-  'uploads/visitor' // directory inside /public/
 )
 
 // ==================== 💰 BILL ROUTES ====================
@@ -99,50 +93,7 @@ router.post(
 )
 
 // ==================== 🚪 VISITOR ROUTES ====================
-router.get('/visitor', isAuth, visitorController.getVisitorController)
 
-router.get(
-  '/user-visitor/:start/:end',
-  isAuth,
-  visitorController.getVisitorFilterController
-)
-
-router.get(
-  '/visitor/otp/code/:otp',
-  isAuth,
-  visitorController.getVisitorHappyCode
-)
-
-router.post(
-  '/visitor',
-  isAuth,
-  visitorValidation.postVisitor,
-  imageVisitorUpload('photo'),
-  visitorController.postVisitorController
-)
-router.get(
-  '/visitor/create/data',
-  isAuth,
-  visitorController.createVisitorController
-)
-router.put(
-  '/visitor/update/:id',
-  isAuth,
-  visitorValidation.postVisitor,
-  imageVisitorUpload('photo'),
-  visitorController.putVisitiorController
-)
-router.get(
-  '/visitor/allow/gateIn/:status/:id',
-  isAuth,
-  visitorController.allowGateInFunc
-)
-
-router.get(
-  '/visitor/user/exit/data/:id',
-  isAuth,
-  visitorController.getVisitorExitData
-)
 
 // ==================== 📊 DASHBOARD ====================
 router.get('/dashboard', isAuth, dashboardController.getDashboardDataAPI)
