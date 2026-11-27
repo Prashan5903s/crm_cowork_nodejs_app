@@ -49,6 +49,7 @@ const proposalController = require('../controller/Company/ProposalAPIController'
 const ContractDocumentTypeController = require("../controller/Company/Setting/ContractDocumentTypeController")
 const LeadMoveInLineController = require("../controller/Company/Setting/LeadMoveInTimelineAPIController")
 const LeadStatusAPIController = require("../controller/Company/Setting/LeadStatusAPIController")
+const ComplainController = require('../controller/Company/ComplainAPIController')
 
 const visitorValidation = require('../validation/VisitorController')
 const createUpload = require('../util/upload')
@@ -203,6 +204,20 @@ const {
   'uploads/images' // directory inside /public/
 )
 
+// ==================== COMPLAIN IMAGE UPLOAD ====================
+const {
+  middleware: complainUpload
+} = createUpload(
+  ['image/jpeg', 'image/png', 'image/gif', 'image/webp'], // SVG removed: it can carry scripts
+  'uploads/complain',
+  5, {
+    complain_img: {
+      mimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+      extensions: ['.jpg', '.jpeg', '.png', '.gif', '.webp']
+    }
+  }
+)
+
 const {
   middleware: imageLeadUpload
 } = createUpload(
@@ -223,6 +238,8 @@ const {
   ['image/jpeg', 'image/png', 'image/jpg'], // allowed types
   'uploads/event' // directory inside /public/
 )
+
+
 
 const contactFiles = contactUpload.fields([{
     name: "photo",
@@ -544,5 +561,12 @@ router.get(
   isAuth,
   visitorController.getVisitorExitData
 )
+
+// ==================== COMPLAIN / TICKETS ====================
+router.get('/complain/create', isAuth, ComplainController.getComplainCreateAPIController)
+router.get('/complain/categories', isAuth, ComplainController.getComplainCategoriesAPIController)
+router.post('/complain/create', isAuth, complainUpload('complain_img'), ComplainController.postComplainCreateAPIController)
+router.get('/complain/data/:status', isAuth, ComplainController.getComplainAPIController)
+router.post('/complain/data/:id/:code', isAuth, ComplainController.postComplainAPIController)
 
 module.exports = router
